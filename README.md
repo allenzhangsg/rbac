@@ -2,8 +2,12 @@
 A monolithic repo for Role-Based Access Control Application Coding Challenge
 
 
-## backend
-Implemented with fastapi framework for api services
+| Framework | Description |
+| --- | --- |
+| AWS Lambda | Serverless computing service for backend API services |
+| API Gateway | API management service for backend API services |
+| Next.js | Frontend framework for static site generation |
+| AWS Amplify | Hosting service for Next.js static site |
+| DynamoDB | NoSQL database service |
+| Cognito | Authentication service |
 
-## frontend
-Under ./rbac directory implemented with nextjs framework for static site generation
