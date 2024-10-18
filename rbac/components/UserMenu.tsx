@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { UserCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const username = "John Doe"; // Replace with actual user data
+  const { user, logout } = useAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
   const handleLogout = () => {
     // Implement logout logic here
+    logout();
     console.log("Logging out...");
   };
 
@@ -21,7 +23,7 @@ export function UserMenu() {
         className="flex items-center space-x-2 focus:outline-none"
       >
         <UserCircle className="h-6 w-6 text-gray-600" />
-        <span className="text-sm font-medium">{username}</span>
+        <span className="text-sm font-medium">{user?.name}</span>
       </button>
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">

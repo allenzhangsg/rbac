@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import localFont from "next/font/local";
 import "./globals.css";
-import { UserMenu } from "@/components/UserMenu";
+import { ClientAuthProvider } from "@/components/ClientAuthProvider";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,27 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen h-full`}
       >
-        <header className="border-b">
-          <div className="container mx-auto py-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <Image src="/favicon.ico" alt="Logo" width={24} height={24} />
-              <h1 className="text-2xl font-bold ml-2">RBAC Application</h1>
-            </div>
-            <UserMenu />
-          </div>
-        </header>
-
-        <main className="flex-grow">{children}</main>
-
-        <footer className="border-t">
-          <div className="container mx-auto py-4 text-center text-sm text-gray-600">
-            © 2024 RBAC Application. All rights reserved.
-          </div>
-        </footer>
+        <ClientAuthProvider>
+          <Header />
+          <main className="flex-grow flex items-center justify-center">{children}</main>
+          <Footer />
+        </ClientAuthProvider>
       </body>
     </html>
   );
