@@ -92,7 +92,7 @@ def login(event, context):
             'statusCode': 200,
             'body': json.dumps({'access_token': access_token, 'token_type': 'bearer'}),
             'headers': {
-                'Set-Cookie': f'access_token={access_token}; HttpOnly; Path=/; Max-Age={ACCESS_TOKEN_EXPIRE_MINUTES * 60}'
+                'Set-Cookie': f'access_token={access_token}; HttpOnly; SameSite=None; Path=/; Max-Age={ACCESS_TOKEN_EXPIRE_MINUTES * 60}'
             }
         }
 

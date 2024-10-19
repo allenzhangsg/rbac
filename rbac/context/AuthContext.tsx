@@ -14,6 +14,10 @@ interface AuthContextType {
   logout: () => void;
 }
 
+const getAccessToken = () => {
+  return document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1] || '';
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -30,11 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "GET",
         credentials: "include",
         headers: {
-          // a workaround to cross origin request
-          Authorization: `Bearer ${document.cookie.replace(
-            /(?:(?:^|.*;\s*)access_token\s*\=\s*([^;]*).*$)|^.*$/,
-            "$1"
-          )}`,
+          'Authorization': `Bearer ${getAccessToken()}`,
         },
       });
       if (response.ok) {
