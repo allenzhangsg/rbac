@@ -1,16 +1,16 @@
 import { useState, useEffect, createContext, useContext } from "react";
-import Cookies from "js-cookie";
+import { API_DOMAIN } from "@/config";
 
 interface User {
   id: string;
-  name: string;
-  // Add other user properties
+  username: string;
+  role: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -25,34 +25,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = Cookies.get("auth_token");
-    if (token) {
-      try {
-        const response = await fetch("https://your-api.com/api/user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          Cookies.remove("auth_token");
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error);
+    try {
+      const response = await fetch(`${API_DOMAIN}/api/v1/auth/check`, {
+        credentials: "include", // including cookies
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        setUser(null);
       }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      setUser(null);
     }
     setLoading(false);
   };
 
-  const login = async (token: string) => {
-    Cookies.set("auth_token", token, { secure: true, sameSite: "strict" });
-    await checkAuth();
+  const login = async (username: string, password: string) => {
+    try {
+      const response = await fetch(`${API_DOMAIN}/api/v1/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+        credentials: "include", // including cookies
+      });
+
+      if (response.ok) {
+        await checkAuth(); // Refresh user data after successful login
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    Cookies.remove("auth_token");
+  const logout = async () => {
+    try {
+      await fetch(`${API_DOMAIN}/api/v1/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
     setUser(null);
   };
 

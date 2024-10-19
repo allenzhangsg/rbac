@@ -9,5 +9,5 @@ A monolithic repo for Role-Based Access Control Application Coding Challenge
 | Next.js | Frontend framework for static site generation |
 | AWS Amplify | Hosting service for Next.js static site |
 | DynamoDB | NoSQL database service |
-| Cognito | Authentication service |
+| Cognito (future) | Authentication service |
 

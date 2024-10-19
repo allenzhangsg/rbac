@@ -21,25 +21,11 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Replace this URL with your actual login API endpoint
-      const response = await fetch("https://your-api.com/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        await login(data.token);
-        router.push("/"); // Redirect to home page after successful login
-      } else {
-        setError("Invalid username or password");
-      }
+      await login(username, password);
+      router.push("/"); // Redirect to home page after successful login
     } catch (error) {
       console.error("Login error:", error);
-      setError("An error occurred. Please try again.");
+      setError("Invalid username or password");
     }
   };
 
