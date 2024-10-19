@@ -35,9 +35,14 @@ def get_user(username: str):
 
 def verify_and_get_user(event):
     try:
-        # Extract the token from the Cookie header
-        cookie_header = event.get('headers', {}).get('Cookie', '')
-        token = next((cookie.split('=')[1] for cookie in cookie_header.split('; ') if cookie.startswith('access_token=')), None)
+        # Try to extract token from Authorization header first
+        auth_header = event.get('headers', {}).get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        else:
+            # If not in Authorization header, try to extract from Cookie
+            cookie_header = event.get('headers', {}).get('Cookie', '')
+            token = next((cookie.split('=')[1] for cookie in cookie_header.split('; ') if cookie.startswith('access_token=')), None)
 
         if not token:
             return None, "No token provided"
@@ -80,7 +85,7 @@ def login(event, context):
             }
 
         access_token = create_access_token(
-            data={"sub": user['id'], "username": user['username'], "role": user['role']}
+            data={"sub": str(user["id"]), "username": user["username"], "role": user["role"]}
         )
 
         return {

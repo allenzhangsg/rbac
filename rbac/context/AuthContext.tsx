@@ -27,7 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     try {
       const response = await fetch(`${API_DOMAIN}/api/v1/auth/check`, {
-        credentials: "include", // including cookies
+        method: "GET",
+        credentials: "include",
+        headers: {
+          // a workaround to cross origin request
+          Authorization: `Bearer ${document.cookie.replace(
+            /(?:(?:^|.*;\s*)access_token\s*\=\s*([^;]*).*$)|^.*$/,
+            "$1"
+          )}`,
+        },
       });
       if (response.ok) {
         const userData = await response.json();
