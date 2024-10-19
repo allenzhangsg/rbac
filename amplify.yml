@@ -1,0 +1,12 @@
+version: 1
+frontend:
+  phases:
+    build:
+      commands:
+        - "cd ./rbac && npm install && npm run build"
+  artifacts:
+    baseDirectory: ./rbac/out
+    files:
+      - "**/*"
+  cache:
+    paths: []
