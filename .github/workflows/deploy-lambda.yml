@@ -23,12 +23,11 @@ jobs:
 
     - name: Create deployment package
       run: |
-        cp api/*.py package/
+        # cp api/*.py package/
         cd package
         zip -r ../lambda_function.zip .
         cd ..
         zip -g lambda_function.zip api/*.py
-        ls -l
         ls -l ./package
 
     - name: Check zip contents
