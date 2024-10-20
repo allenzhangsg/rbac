@@ -22,8 +22,16 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_password(plain_password, hashed_password):
-    return pbkdf2_sha256.verify(plain_password, hashed_password)
+def verify_password(hashed_password, stored_password):
+    # Extract salt and iterations from the stored password
+    parts = stored_password.split('$')
+    if len(parts) != 3:
+        return False
+    salt, iterations, _ = parts
+    iterations = int(iterations)
+
+    # Verify the hashed password
+    return pbkdf2_sha256.using(salt=salt, rounds=iterations).verify(hashed_password, stored_password)
 
 def get_user(username: str):
     response = table.query(
@@ -35,14 +43,9 @@ def get_user(username: str):
 
 def verify_and_get_user(event):
     try:
-        # Try to extract token from Authorization header first
-        auth_header = event.get('headers', {}).get('Authorization', '')
-        if auth_header.startswith('Bearer '):
-            token = auth_header.split(' ')[1]
-        else:
-            # If not in Authorization header, try to extract from Cookie
-            cookie_header = event.get('headers', {}).get('Cookie', '')
-            token = next((cookie.split('=')[1] for cookie in cookie_header.split('; ') if cookie.startswith('access_token=')), None)
+        # Extract token from Cookie
+        cookie_header = event.get('headers', {}).get('Cookie', '')
+        token = next((cookie.split('=')[1] for cookie in cookie_header.split('; ') if cookie.startswith('access_token=')), None)
 
         if not token:
             return None, "No token provided"
@@ -69,7 +72,7 @@ def login(event, context):
     try:
         body = json.loads(event['body'])
         username = body['username']
-        password = body['password']
+        hashed_password = body['password']
 
         user = get_user(username)
         if not user:
@@ -78,7 +81,7 @@ def login(event, context):
                 'body': json.dumps({'error': 'Invalid username or password'})
             }
 
-        if not verify_password(password, user['password']):
+        if not verify_password(hashed_password, user['password']):
             return {
                 'statusCode': 401,
                 'body': json.dumps({'error': 'Invalid username or password'})
@@ -91,8 +94,8 @@ def login(event, context):
         return {
             'statusCode': 200,
             'body': json.dumps({'access_token': access_token, 'token_type': 'bearer'}),
-            'headers': {
-                'Set-Cookie': f'access_token={access_token}; HttpOnly; SameSite=None; Path=/; Max-Age={ACCESS_TOKEN_EXPIRE_MINUTES * 60}'
+            'headers': {  # to cross origin, use Secure; SameSite=None; 
+                'Set-Cookie': f'access_token={access_token}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age={ACCESS_TOKEN_EXPIRE_MINUTES * 60}'
             }
         }
 
@@ -120,6 +123,6 @@ def logout(event, context):
         'statusCode': 200,
         'body': json.dumps({'message': 'Logged out successfully'}),
         'headers': {
-            'Set-Cookie': 'access_token=; HttpOnly; Path=/; Max-Age=0'
+            'Set-Cookie': 'access_token=; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=0'
         }
     }

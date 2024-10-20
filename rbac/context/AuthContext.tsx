@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { API_DOMAIN } from "@/config";
+import CryptoJS from 'crypto-js';
 
 interface User {
   id: string;
@@ -13,10 +14,6 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
-
-const getAccessToken = () => {
-  return document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1] || '';
-};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -33,9 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch(`${API_DOMAIN}/api/v1/auth/check`, {
         method: "GET",
         credentials: "include",
-        headers: {
-          'Authorization': `Bearer ${getAccessToken()}`,
-        },
       });
       if (response.ok) {
         const userData = await response.json();
@@ -50,19 +44,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
+  const hashPassword = (password: string): string => {
+    const salt = CryptoJS.lib.WordArray.random(16);
+    const iterations = 100000; // Same as default in passlib
+    const keylen = 32; // 256 bits
+
+    const hash = CryptoJS.PBKDF2(password, salt, {
+      keySize: keylen / 4,
+      iterations: iterations,
+      hasher: CryptoJS.algo.SHA256
+    });
+
+    return salt.toString() + '$' + iterations + '$' + hash.toString();
+  };
+
   const login = async (username: string, password: string) => {
     try {
+      const hashedPassword = hashPassword(password);
       const response = await fetch(`${API_DOMAIN}/api/v1/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
-        credentials: "include", // including cookies
+        body: JSON.stringify({ username, password: hashedPassword }),
+        credentials: "include",
       });
 
       if (response.ok) {
-        await checkAuth(); // Refresh user data after successful login
+        await checkAuth();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Login failed");

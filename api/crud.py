@@ -37,7 +37,7 @@ def create_user(event, context):
         
         user_id = response['Attributes']['current_count']
         # Hash the password
-        hashed_password = pbkdf2_sha256.hash(body.get('password', ''))
+        hashed_password = body.get('password', '')  # hashed at client side
         
         # Create the item with all the fields we expect
         item = {
