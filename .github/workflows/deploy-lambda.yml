@@ -35,4 +35,4 @@ jobs:
 
     - name: Deploy to Lambda
       run: |
-        aws lambda update-function-code --function-name RBAC --zip-file ./lambda_function.zip
+        aws lambda update-function-code --function-name RBAC --zip-file fileb://${{ github.workspace }}/lambda_function.zip
