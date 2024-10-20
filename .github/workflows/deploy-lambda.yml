@@ -33,12 +33,8 @@ jobs:
 
     - name: Check zip contents
       run: |
-        echo "All contents:"
-        unzip -l lambda_function.zip
-        echo "Python files in zip:"
-        unzip -l lambda_function.zip | grep '\.py'
-        echo "First few files in zip:"
-        unzip -l lambda_function.zip | head -n 10
+        echo "lambda_function.py file in zip:"
+        unzip -l lambda_function.zip | grep '\lambda_function.py'
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
