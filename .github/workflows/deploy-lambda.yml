@@ -24,12 +24,17 @@ jobs:
     - name: Create deployment package
       run: |
         cp api/*.py package/
-        zip -r lambda_function.zip ./package
+        cd package
+        zip -r ../lambda_function.zip .
+        cd ..
         ls -l
         ls -l ./package
 
     - name: Check zip contents
-      run: unzip -l lambda_function.zip
+      run: |
+        unzip -l lambda_function.zip
+        echo "First few files in zip:"
+        unzip -l lambda_function.zip | head -n 10
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
