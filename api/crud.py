@@ -32,32 +32,53 @@ def create_user(event, context):
     try:
         body = json.loads(event['body'])
         
-        # Atomically increment and get the next user ID
-        response = table.update_item(
-            Key={'id': 'USER_COUNTER'},
-            UpdateExpression='SET current_count = if_not_exists(current_count, :start) + :inc',
-            ExpressionAttributeValues={
-                ':inc': 1,
-                ':start': 0,
-            },
-            ReturnValues='UPDATED_NEW'
+        # Check if username already exists
+        username = body.get('username')
+        if not username:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'Username is required'})
+            }
+        
+        # Query the table to check if the username already exists
+        response = table.query(
+            IndexName='username-index',  # You'll need to create this global secondary index
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('username').eq(username),
+            ProjectionExpression='id'
         )
         
-        user_id = response['Attributes']['current_count']
+        if response['Items']:
+            return {
+                'statusCode': 409,
+                'body': json.dumps({'error': 'Username already exists'})
+            }
+        
+        # Scan the whole table to get all IDs. fix in the future
+        response = table.scan(
+            ProjectionExpression='id'
+        )
+        
+        # Find the maximum ID
+        max_id = 0
+        for item in response['Items']:
+            max_id = max(max_id, int(item['id']))
+        
+        new_user_id = max_id + 1
+        
         # Hash the password
         hashed_password = hash_password(body['password'])
         
         # Create the item with all the fields we expect
         item = {
-            'id': int(user_id),
+            'id': new_user_id,
             'name': body.get('name', ''),
-            'username': body.get('username', ''),
+            'username': username,
             'email': body.get('email', ''),
             'phone': body.get('phone', ''),
             'website': body.get('website', ''),
             'role': body.get('role', 'Staff'),
             'password_hash': hashed_password,
-            'permissions': ','.join(body.get('permissions', ['CanReadUser'])),
+            'permissions': body.get('permissions', ['CanReadUser']),  # array of strings
         }
         
         # Remove any attributes with empty values
@@ -67,7 +88,7 @@ def create_user(event, context):
         
         return {
             'statusCode': 201,
-            'body': json.dumps({'message': 'User created successfully', 'userId': user_id})
+            'body': json.dumps({'message': 'User created successfully', 'userId': new_user_id})
         }
     except Exception as e:
         return {
@@ -88,6 +109,8 @@ def read_user(event, context):
             
             if 'Item' in response:
                 user = response['Item']
+                # Remove the password_hash key
+                user.pop('password_hash', None)
                 return {
                     'statusCode': 200,
                     'body': json.dumps(user, cls=DecimalEncoder)
@@ -101,6 +124,9 @@ def read_user(event, context):
             # Read all users
             response = table.scan()
             users = response['Items']
+            # Remove password_hash from all users
+            for user in users:
+                user.pop('password_hash', None)
             
             return {
                 'statusCode': 200,

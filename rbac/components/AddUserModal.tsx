@@ -118,14 +118,20 @@ export function AddUserModal({ onUserAdded }: { onUserAdded: () => void }) {
     setPermissions(["CanReadUser"]);
   };
 
-  if (!hasPermission("CanCreateUser")) {
-    return null;
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="default">Add New User</Button>
+        <Button
+          variant="default"
+          disabled={!hasPermission("CanCreateUser")}
+          className={
+            !hasPermission("CanCreateUser")
+              ? "cursor-not-allowed opacity-50"
+              : ""
+          }
+        >
+          Add New User
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
@@ -231,29 +237,27 @@ export function AddUserModal({ onUserAdded }: { onUserAdded: () => void }) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[200px] p-0">
-                  <div className="max-h-[200px] overflow-y-auto">
-                    {allPermissions.map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setPermissions((prev) =>
-                            prev.includes(item)
-                              ? prev.filter((i) => i !== item)
-                              : [...prev, item]
-                          );
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={permissions.includes(item)}
-                          onChange={() => {}}
-                          className="h-4 w-4"
-                        />
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {allPermissions.map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setPermissions((prev) =>
+                          prev.includes(item)
+                            ? prev.filter((i) => i !== item)
+                            : [...prev, item]
+                        );
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={permissions.includes(item)}
+                        onChange={() => {}}
+                        className="h-4 w-4"
+                      />
+                      <span>{item}</span>
+                    </div>
+                  ))}
                 </PopoverContent>
               </Popover>
             </div>

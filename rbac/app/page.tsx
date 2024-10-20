@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <AuthWrapper>
+    <AuthWrapper requiredPermission="CanReadUser">
       <div className="container mx-auto my-8 flex">
         <nav className="w-64 pr-7">
           <Card>

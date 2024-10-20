@@ -77,18 +77,23 @@ def login(event, context):
                 'body': json.dumps({'error': 'Invalid username or password'})
             }
 
-        if not verify_password(plain_password, user['password']):
+        if not verify_password(plain_password, user['password_hash']):
             return {
                 'statusCode': 401,
                 'body': json.dumps({'error': 'Invalid username or password'})
             }
+
+        # Handle the permissions field
+        permissions = user.get("permissions", [])
+        if permissions is None or not isinstance(permissions, list):
+            permissions = []
 
         access_token = create_access_token(
             data={
                 "sub": str(user["id"]),
                 "username": user["username"],
                 "role": user["role"],
-                "permissions": user["permissions"]
+                "permissions": permissions
             }
         )
 

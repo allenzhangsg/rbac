@@ -33,13 +33,15 @@ export function AuthWrapper({
 
   if (showPermissionDenied) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Permission Denied</AlertTitle>
-        <AlertDescription>
-          You do not have the required permissions to access this page.
-        </AlertDescription>
-      </Alert>
+      <div className="fixed inset-0 flex items-center justify-center z-40">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Permission Denied</AlertTitle>
+          <AlertDescription>
+            You do not have the required permissions to access this page.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 

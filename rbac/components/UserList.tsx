@@ -52,15 +52,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface User {
   id: number;
@@ -140,7 +131,7 @@ export function UserList() {
     if (hasPermission("CanUpdateUser")) {
       setEditingUser({
         ...user,
-        permissions: user.permissions || [] // Ensure permissions is always an array
+        permissions: user.permissions || [], // Ensure permissions is always an array
       });
       setIsEditModalOpen(true);
     } else {
@@ -341,26 +332,49 @@ export function UserList() {
               <TableCell>{user.phone}</TableCell>
               <TableCell>{user.website}</TableCell>
               <TableCell>{user.role}</TableCell>
-              <TableCell>{user.permissions.join(", ")}</TableCell>
+              <TableCell>
+                {Array.isArray(user.permissions)
+                  ? user.permissions.join(", ")
+                  : "None"}
+              </TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">Actions</Button>
+                    <Button
+                      variant="secondary"
+                      disabled={
+                        !hasPermission("CanUpdateUser") &&
+                        !hasPermission("CanDeleteUser")
+                      }
+                      className={
+                        !hasPermission("CanUpdateUser") &&
+                        !hasPermission("CanDeleteUser")
+                          ? "text-gray-400 cursor-not-allowed"
+                          : ""
+                      }
+                    >
+                      Actions
+                    </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {hasPermission("CanUpdateUser") && (
-                      <DropdownMenuItem onSelect={() => handleEditClick(user)}>
-                        Edit
-                      </DropdownMenuItem>
-                    )}
-                    {hasPermission("CanDeleteUser") && (
-                      <DropdownMenuItem
-                        onSelect={() => handleDeleteClick(user)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
+                  {(hasPermission("CanUpdateUser") ||
+                    hasPermission("CanDeleteUser")) && (
+                    <DropdownMenuContent>
+                      {hasPermission("CanUpdateUser") && (
+                        <DropdownMenuItem
+                          onSelect={() => handleEditClick(user)}
+                        >
+                          Edit
+                        </DropdownMenuItem>
+                      )}
+                      {hasPermission("CanDeleteUser") && (
+                        <DropdownMenuItem
+                          onSelect={() => handleDeleteClick(user)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  )}
                 </DropdownMenu>
               </TableCell>
             </TableRow>
@@ -506,28 +520,21 @@ export function UserList() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[200px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Search permissions..." />
-                        <CommandEmpty>No permission found.</CommandEmpty>
-                        <CommandGroup>
-                          {allPermissions.map((item) => (
-                            <CommandItem
-                              key={item}
-                              onSelect={() => handlePermissionChange(item)}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  editingUser?.permissions?.includes(item)
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {item}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
+                      {allPermissions.map((item) => (
+                        <div
+                          key={item}
+                          className="flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handlePermissionChange(item)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editingUser?.permissions?.includes(item)}
+                            onChange={() => {}}
+                            className="h-4 w-4"
+                          />
+                          <span>{item}</span>
+                        </div>
+                      ))}
                     </PopoverContent>
                   </Popover>
                 </div>
