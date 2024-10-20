@@ -21,19 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_DOMAIN } from "@/config";
 import { useAuth } from "@/context/AuthContext";
@@ -239,34 +231,29 @@ export function AddUserModal({ onUserAdded }: { onUserAdded: () => void }) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search permissions..." />
-                    <CommandEmpty>No permission found.</CommandEmpty>
-                    <CommandGroup>
-                      {allPermissions.map((item) => (
-                        <CommandItem
-                          key={item}
-                          onSelect={() => {
-                            setPermissions((prev) =>
-                              prev.includes(item)
-                                ? prev.filter((i) => i !== item)
-                                : [...prev, item]
-                            );
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              permissions.includes(item)
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {item}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
+                  <div className="max-h-[200px] overflow-y-auto">
+                    {allPermissions.map((item) => (
+                      <div
+                        key={item}
+                        className="flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          setPermissions((prev) =>
+                            prev.includes(item)
+                              ? prev.filter((i) => i !== item)
+                              : [...prev, item]
+                          );
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={permissions.includes(item)}
+                          onChange={() => {}}
+                          className="h-4 w-4"
+                        />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>

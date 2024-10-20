@@ -126,6 +126,8 @@ def update_user(event, context):
         expression_attribute_names = {}
         
         for key, value in body.items():
+            if key == 'id':
+                continue
             update_expression += f"#{key} = :{key}, "
             expression_attribute_values[f":{key}"] = value
             expression_attribute_names[f"#{key}"] = key
