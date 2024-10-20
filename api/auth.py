@@ -52,9 +52,9 @@ def verify_and_get_user(event):
             return None, "Invalid token"
 
         # Extract username, role, and permissions from the payload
-        username = payload.get('username')
-        role = payload.get('role')
-        permissions = payload.get('permissions', [])
+        username: str = payload.get('username')
+        role: str = payload.get('role')
+        permissions: list = payload.get('permissions', [])
 
         if not username or not role:
             return None, "Token payload is missing required fields"

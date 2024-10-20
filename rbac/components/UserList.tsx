@@ -138,7 +138,10 @@ export function UserList() {
 
   const handleEditClick = (user: User) => {
     if (hasPermission("CanUpdateUser")) {
-      setEditingUser(user);
+      setEditingUser({
+        ...user,
+        permissions: user.permissions || [] // Ensure permissions is always an array
+      });
       setIsEditModalOpen(true);
     } else {
       toast({
@@ -207,11 +210,12 @@ export function UserList() {
 
   const handlePermissionChange = (permission: string) => {
     if (editingUser) {
+      const currentPermissions = editingUser.permissions || [];
       setEditingUser({
         ...editingUser,
-        permissions: editingUser.permissions.includes(permission)
-          ? editingUser.permissions.filter((p) => p !== permission)
-          : [...editingUser.permissions, permission],
+        permissions: currentPermissions.includes(permission)
+          ? currentPermissions.filter((p) => p !== permission)
+          : [...currentPermissions, permission],
       });
     }
   };
@@ -495,7 +499,7 @@ export function UserList() {
                         aria-expanded={openPermissions}
                         className="w-[200px] justify-between"
                       >
-                        {editingUser.permissions.length > 0
+                        {editingUser?.permissions?.length > 0
                           ? `${editingUser.permissions.length} selected`
                           : "Select permissions"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -514,7 +518,7 @@ export function UserList() {
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  editingUser.permissions.includes(item)
+                                  editingUser?.permissions?.includes(item)
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}

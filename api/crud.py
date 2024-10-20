@@ -1,23 +1,31 @@
 import json
 import boto3
 from auth import hash_password, verify_and_get_user
-from passlib.hash import pbkdf2_sha256
+from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('rbac-users')
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+    
 
 def check_permissions(event, required_permission):
     user, error = verify_and_get_user(event)
     if error:
         return None, {'statusCode': 401, 'body': json.dumps({'error': error})}
     
-    if required_permission not in user['permissions'].split(','):
+    if required_permission not in user['permissions']:
         return None, {'statusCode': 403, 'body': json.dumps({'error': 'Insufficient permissions'})}
     
     return user, None
 
 def create_user(event, context):
-    user, error_response = check_permissions(event, 'CanCreateUser')
+    _, error_response = check_permissions(event, 'CanCreateUser')
     if error_response:
         return error_response
 
@@ -68,7 +76,7 @@ def create_user(event, context):
         }
 
 def read_user(event, context):
-    user, error_response = check_permissions(event, 'CanReadUser')
+    _, error_response = check_permissions(event, 'CanReadUser')
     if error_response:
         return error_response
 
@@ -80,10 +88,9 @@ def read_user(event, context):
             
             if 'Item' in response:
                 user = response['Item']
-                user['permissions'] = user['permissions'].split(',')
                 return {
                     'statusCode': 200,
-                    'body': json.dumps(user)
+                    'body': json.dumps(user, cls=DecimalEncoder)
                 }
             else:
                 return {
@@ -95,13 +102,9 @@ def read_user(event, context):
             response = table.scan()
             users = response['Items']
             
-            # Convert permissions from string to list for each user
-            for user in users:
-                user['permissions'] = user['permissions'].split(',')
-            
             return {
                 'statusCode': 200,
-                'body': json.dumps(users)
+                'body': json.dumps(users, cls=DecimalEncoder)
             }
     except Exception as e:
         return {
@@ -110,7 +113,7 @@ def read_user(event, context):
         }
 
 def update_user(event, context):
-    user, error_response = check_permissions(event, 'CanUpdateUser')
+    _, error_response = check_permissions(event, 'CanUpdateUser')
     if error_response:
         return error_response
 
@@ -123,8 +126,6 @@ def update_user(event, context):
         expression_attribute_names = {}
         
         for key, value in body.items():
-            if key == 'permissions':
-                value = ','.join(value)
             update_expression += f"#{key} = :{key}, "
             expression_attribute_values[f":{key}"] = value
             expression_attribute_names[f"#{key}"] = key
@@ -140,12 +141,10 @@ def update_user(event, context):
         )
         
         updated_user = response['Attributes']
-        if 'permissions' in updated_user:
-            updated_user['permissions'] = updated_user['permissions'].split(',')
         
         return {
             'statusCode': 200,
-            'body': json.dumps({'message': 'User updated successfully', 'updatedAttributes': updated_user})
+            'body': json.dumps({'message': 'User updated successfully', 'updatedAttributes': updated_user}, cls=DecimalEncoder)
         }
     except Exception as e:
         return {
@@ -154,7 +153,7 @@ def update_user(event, context):
         }
 
 def delete_user(event, context):
-    user, error_response = check_permissions(event, 'CanDeleteUser')
+    _, error_response = check_permissions(event, 'CanDeleteUser')
     if error_response:
         return error_response
 
