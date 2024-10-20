@@ -22,16 +22,22 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_password(hashed_password, stored_password):
-    # Extract salt and iterations from the stored password
-    parts = stored_password.split('$')
-    if len(parts) != 3:
-        return False
-    salt, iterations, _ = parts
-    iterations = int(iterations)
+def verify_password(plain_password, hashed_password):
+    try:
+        # Extract algorithm, iterations, salt, and hash from the stored password
+        _, algorithm, iterations, salt, hash = hashed_password.split('$')
+        
+        if algorithm != 'pbkdf2-sha256':
+            return False
 
-    # Verify the hashed password
-    return pbkdf2_sha256.using(salt=salt, rounds=iterations).verify(hashed_password, stored_password)
+        iterations = int(iterations)
+        salt = salt.encode('utf-8')
+
+        # Verify the password
+        return pbkdf2_sha256.using(salt=salt, rounds=iterations).verify(plain_password, hashed_password)
+    except Exception as e:
+        print(f"Error verifying password: {str(e)}")
+        return False
 
 def get_user(username: str):
     response = table.query(

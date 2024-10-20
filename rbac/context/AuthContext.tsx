@@ -55,7 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hasher: CryptoJS.algo.SHA256
     });
 
-    return salt.toString() + '$' + iterations + '$' + hash.toString();
+    // Format the hash to match passlib's pbkdf2_sha256 format
+    return `$pbkdf2-sha256$${iterations}$${salt.toString()}$${hash.toString()}`;
   };
 
   const login = async (username: string, password: string) => {
