@@ -27,12 +27,16 @@ jobs:
         cd package
         zip -r ../lambda_function.zip .
         cd ..
+        zip -g lambda_function.zip api/*.py
         ls -l
         ls -l ./package
 
     - name: Check zip contents
       run: |
+        echo "All contents:"
         unzip -l lambda_function.zip
+        echo "Python files in zip:"
+        unzip -l lambda_function.zip | grep '\.py'
         echo "First few files in zip:"
         unzip -l lambda_function.zip | head -n 10
 
