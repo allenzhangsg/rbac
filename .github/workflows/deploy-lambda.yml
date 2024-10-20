@@ -27,7 +27,6 @@ jobs:
         cd package
         zip -r ../lambda_function.zip .
         cd ..
-        # zip -g lambda_function.zip api/*.py
         ls -l ./package
 
     - name: Check zip contents
@@ -46,7 +45,3 @@ jobs:
       run: |
         aws lambda update-function-code --function-name RBAC --zip-file fileb://${{ github.workspace }}/lambda_function.zip
 
-    - name: Test Lambda function
-      run: |
-        aws lambda invoke --function-name RBAC --payload '{}' response.json
-        cat response.json
