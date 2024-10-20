@@ -1,6 +1,6 @@
 import json
 import boto3
-from auth import verify_and_get_user
+from auth import hash_password, verify_and_get_user
 from passlib.hash import pbkdf2_sha256
 
 dynamodb = boto3.resource('dynamodb')
@@ -37,7 +37,7 @@ def create_user(event, context):
         
         user_id = response['Attributes']['current_count']
         # Hash the password
-        hashed_password = body.get('password', '')  # hashed at client side
+        hashed_password = hash_password(body['password'])
         
         # Create the item with all the fields we expect
         item = {

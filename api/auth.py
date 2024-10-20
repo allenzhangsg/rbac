@@ -23,21 +23,10 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 def verify_password(plain_password, hashed_password):
-    try:
-        # Extract algorithm, iterations, salt, and hash from the stored password
-        _, algorithm, iterations, salt, hash = hashed_password.split('$')
-        
-        if algorithm != 'pbkdf2-sha256':
-            return False
+    return pbkdf2_sha256.verify(plain_password, hashed_password)
 
-        iterations = int(iterations)
-        salt = salt.encode('utf-8')
-
-        # Verify the password
-        return pbkdf2_sha256.using(salt=salt, rounds=iterations).verify(plain_password, hashed_password)
-    except Exception as e:
-        print(f"Error verifying password: {str(e)}")
-        return False
+def hash_password(password):
+    return pbkdf2_sha256.hash(password)
 
 def get_user(username: str):
     response = table.query(
@@ -78,7 +67,7 @@ def login(event, context):
     try:
         body = json.loads(event['body'])
         username = body['username']
-        hashed_password = body['password']
+        plain_password = body['password']
 
         user = get_user(username)
         if not user:
@@ -87,7 +76,7 @@ def login(event, context):
                 'body': json.dumps({'error': 'Invalid username or password'})
             }
 
-        if not verify_password(hashed_password, user['password']):
+        if not verify_password(plain_password, user['password']):
             return {
                 'statusCode': 401,
                 'body': json.dumps({'error': 'Invalid username or password'})
