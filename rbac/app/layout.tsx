@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClientAuthProvider } from "@/components/ClientAuthProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { ToastProvider } from "@/components/ui/toast";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -33,7 +34,11 @@ export default function RootLayout({
       >
         <ClientAuthProvider>
           <Header />
-          <main className="flex-grow flex items-center justify-center">{children}</main>
+          <ToastProvider>
+            <main className="flex-grow flex">
+              {children}
+            </main>
+          </ToastProvider>
           <Footer />
         </ClientAuthProvider>
       </body>

@@ -4,8 +4,8 @@ import { AuthWrapper } from "@/components/AuthWrapper";
 
 export default function ProtectedPage() {
   return (
-    <AuthWrapper>
-      <div>Protected Page</div>
+    <AuthWrapper requiredPermission="CanViewProtectedRoute">
+      <div>Congratulations! You have access to this very important page.</div>
     </AuthWrapper>
   );
 }

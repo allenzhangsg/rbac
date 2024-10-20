@@ -2,7 +2,6 @@
 
 import { Card } from "@/components/ui/card";
 import { UserList } from "@/components/UserList";
-import { AddUserModal } from "@/components/AddUserModal";
 import { AuthWrapper } from "@/components/AuthWrapper";
 import Link from "next/link";
 
@@ -12,12 +11,6 @@ export default function Home() {
       <div className="container mx-auto my-8 flex">
         <nav className="w-64 pr-7">
           <Card>
-            <h3 className="p-4 font-semibold text-lg">Actions</h3>
-            <div className="px-4 pb-4">
-              <AddUserModal />
-            </div>
-          </Card>
-          <Card className="mt-4">
             <h3 className="p-4 font-semibold text-lg">Resources</h3>
             <ul className="px-4 pb-4">
               <li>

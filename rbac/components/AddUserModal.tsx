@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  // DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -21,78 +20,274 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { API_DOMAIN } from "@/config";
+import { useAuth } from "@/context/AuthContext";
+import { allPermissions } from "@/config";
 
-
-export function AddUserModal() {
+export function AddUserModal({ onUserAdded }: { onUserAdded: () => void }) {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-//   const [role, setRole] = useState("Staff");
+  const [phone, setPhone] = useState("");
+  const [website, setWebsite] = useState("");
+  const [role, setRole] = useState("Staff");
+  const [password, setPassword] = useState("");
+  const [permissions, setPermissions] = useState<string[]>(["CanReadUser"]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [openPermissions, setOpenPermissions] = useState(false);
+  const { toast } = useToast();
+  const { hasPermission } = useAuth();
 
-  //   const handleSubmit = (e: React.FormEvent) => {
-  //     e.preventDefault();
-  //     // TODO: Implement user creation logic here
-  //     console.log("Creating user:", { name, email, role });
-  //     onClose();
-  //   };
+  useEffect(() => {
+    if (role === "Admin") {
+      setPermissions(allPermissions);
+    } else {
+      setPermissions(["CanReadUser"]);
+    }
+  }, [role]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!hasPermission("CanCreateUser")) {
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to create new users.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newUser = {
+      name,
+      username,
+      email,
+      phone,
+      website,
+      role,
+      password,
+      permissions,
+    };
+
+    try {
+      const response = await fetch(`${API_DOMAIN}/api/v1/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(newUser),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "User added",
+          description: "The new user has been successfully added.",
+        });
+        onUserAdded();
+        setIsOpen(false);
+        resetForm();
+      } else {
+        throw new Error("Failed to add user");
+      }
+    } catch (error) {
+      console.error("Error adding user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setName("");
+    setUsername("");
+    setEmail("");
+    setPhone("");
+    setWebsite("");
+    setRole("Staff");
+    setPassword("");
+    setPermissions(["CanReadUser"]);
+  };
+
+  if (!hasPermission("CanCreateUser")) {
+    return null;
+  }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="default">Add New User</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>
-            Add a new user to the system.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="col-span-3"
-              required
-            />
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>Add a new user to the system.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Phone
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="website" className="text-right">
+                Website
+              </Label>
+              <Input
+                id="website"
+                type="url"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Role</SelectLabel>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="Staff">Staff</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="permissions" className="text-right">
+                Permissions
+              </Label>
+              <Popover open={openPermissions} onOpenChange={setOpenPermissions}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openPermissions}
+                    className="w-[200px] justify-between"
+                  >
+                    {permissions.length > 0
+                      ? `${permissions.length} selected`
+                      : "Select permissions"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search permissions..." />
+                    <CommandEmpty>No permission found.</CommandEmpty>
+                    <CommandGroup>
+                      {allPermissions.map((item) => (
+                        <CommandItem
+                          key={item}
+                          onSelect={() => {
+                            setPermissions((prev) =>
+                              prev.includes(item)
+                                ? prev.filter((i) => i !== item)
+                                : [...prev, item]
+                            );
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              permissions.includes(item)
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {item}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="col-span-3"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
-              Role
-            </Label>
-            <Select>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Role</SelectLabel>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Staff">Staff</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="submit">Add User</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="submit">Add User</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

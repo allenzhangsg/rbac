@@ -1,23 +1,23 @@
 import json
 import boto3
-from auth import verify_and_get_user
+from auth import hash_password, verify_and_get_user
 from passlib.hash import pbkdf2_sha256
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('rbac-users')
 
-def check_permissions(event, required_role='Admin'):
+def check_permissions(event, required_permission):
     user, error = verify_and_get_user(event)
     if error:
         return None, {'statusCode': 401, 'body': json.dumps({'error': error})}
     
-    if user['role'] != required_role:
+    if required_permission not in user['permissions'].split(','):
         return None, {'statusCode': 403, 'body': json.dumps({'error': 'Insufficient permissions'})}
     
     return user, None
 
 def create_user(event, context):
-    user, error_response = check_permissions(event)
+    user, error_response = check_permissions(event, 'CanCreateUser')
     if error_response:
         return error_response
 
@@ -37,7 +37,7 @@ def create_user(event, context):
         
         user_id = response['Attributes']['current_count']
         # Hash the password
-        hashed_password = body.get('password', '')  # hashed at client side
+        hashed_password = hash_password(body['password'])
         
         # Create the item with all the fields we expect
         item = {
@@ -45,12 +45,11 @@ def create_user(event, context):
             'name': body.get('name', ''),
             'username': body.get('username', ''),
             'email': body.get('email', ''),
-            'address': body.get('address', ''),
             'phone': body.get('phone', ''),
             'website': body.get('website', ''),
-            'company': body.get('company', ''),
-            'password_hash': hashed_password,
             'role': body.get('role', 'Staff'),
+            'password_hash': hashed_password,
+            'permissions': ','.join(body.get('permissions', ['CanReadUser'])),
         }
         
         # Remove any attributes with empty values
@@ -69,25 +68,40 @@ def create_user(event, context):
         }
 
 def read_user(event, context):
-    user, error_response = check_permissions(event, required_role='Staff')
+    user, error_response = check_permissions(event, 'CanReadUser')
     if error_response:
         return error_response
 
     try:
-        user_id = event['pathParameters']['id']
-        
-        response = table.get_item(Key={'id': user_id})
-        
-        if 'Item' in response:
-            user = response['Item']
+        if 'queryStringParameters' in event and event['queryStringParameters'] and 'id' in event['queryStringParameters']:
+            # Read a single user
+            user_id = int(event['queryStringParameters']['id'])
+            response = table.get_item(Key={'id': user_id})
+            
+            if 'Item' in response:
+                user = response['Item']
+                user['permissions'] = user['permissions'].split(',')
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps(user)
+                }
+            else:
+                return {
+                    'statusCode': 404,
+                    'body': json.dumps({'message': 'User not found'})
+                }
+        else:
+            # Read all users
+            response = table.scan()
+            users = response['Items']
+            
+            # Convert permissions from string to list for each user
+            for user in users:
+                user['permissions'] = user['permissions'].split(',')
+            
             return {
                 'statusCode': 200,
-                'body': json.dumps(user)
-            }
-        else:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'message': 'User not found'})
+                'body': json.dumps(users)
             }
     except Exception as e:
         return {
@@ -96,20 +110,24 @@ def read_user(event, context):
         }
 
 def update_user(event, context):
-    user, error_response = check_permissions(event)
+    user, error_response = check_permissions(event, 'CanUpdateUser')
     if error_response:
         return error_response
 
     try:
-        user_id = event['pathParameters']['id']
+        user_id = int(event['queryStringParameters']['id'])
         body = json.loads(event['body'])
         
         update_expression = "set "
         expression_attribute_values = {}
+        expression_attribute_names = {}
         
         for key, value in body.items():
+            if key == 'permissions':
+                value = ','.join(value)
             update_expression += f"#{key} = :{key}, "
             expression_attribute_values[f":{key}"] = value
+            expression_attribute_names[f"#{key}"] = key
         
         update_expression = update_expression.rstrip(", ")
         
@@ -117,13 +135,17 @@ def update_user(event, context):
             Key={'id': user_id},
             UpdateExpression=update_expression,
             ExpressionAttributeValues=expression_attribute_values,
-            ExpressionAttributeNames={f"#{k}": k for k in body.keys()},
+            ExpressionAttributeNames=expression_attribute_names,
             ReturnValues="UPDATED_NEW"
         )
         
+        updated_user = response['Attributes']
+        if 'permissions' in updated_user:
+            updated_user['permissions'] = updated_user['permissions'].split(',')
+        
         return {
             'statusCode': 200,
-            'body': json.dumps({'message': 'User updated successfully', 'updatedAttributes': response['Attributes']})
+            'body': json.dumps({'message': 'User updated successfully', 'updatedAttributes': updated_user})
         }
     except Exception as e:
         return {
@@ -132,12 +154,12 @@ def update_user(event, context):
         }
 
 def delete_user(event, context):
-    user, error_response = check_permissions(event)
+    user, error_response = check_permissions(event, 'CanDeleteUser')
     if error_response:
         return error_response
 
     try:
-        user_id = event['pathParameters']['id']
+        user_id = int(event['queryStringParameters']['id'])
         
         table.delete_item(Key={'id': user_id})
         
@@ -150,3 +172,4 @@ def delete_user(event, context):
             'statusCode': 500,
             'body': json.dumps({'error': str(e)})
         }
+    

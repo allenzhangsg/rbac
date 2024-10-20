@@ -1,11 +1,10 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { API_DOMAIN } from "@/config";
-import CryptoJS from 'crypto-js';
 
 interface User {
-  id: string;
   username: string;
   role: string;
+  permissions: string[];
 }
 
 interface AuthContextType {
@@ -13,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,30 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
-  const hashPassword = (password: string): string => {
-    const salt = CryptoJS.lib.WordArray.random(16);
-    const iterations = 100000; // Same as default in passlib
-    const keylen = 32; // 256 bits
-
-    const hash = CryptoJS.PBKDF2(password, salt, {
-      keySize: keylen / 4,
-      iterations: iterations,
-      hasher: CryptoJS.algo.SHA256
-    });
-
-    // Format the hash to match passlib's pbkdf2_sha256 format
-    return `$pbkdf2-sha256$${iterations}$${salt.toString()}$${hash.toString()}`;
-  };
-
   const login = async (username: string, password: string) => {
     try {
-      const hashedPassword = hashPassword(password);
       const response = await fetch(`${API_DOMAIN}/api/v1/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password: hashedPassword }),
+        body: JSON.stringify({ username, password }),
         credentials: "include",
       });
 
@@ -95,8 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const hasPermission = (permission: string) => {
+    return user?.permissions.includes(permission) || false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

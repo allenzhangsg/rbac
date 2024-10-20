@@ -22,16 +22,13 @@ def lambda_handler(event, context):
 
         # CRUD endpoints
         if path.startswith("/api/v1/users"):
-            user_id = event["queryStringParameters"].get("id") \
-                if event.get("queryStringParameters") else None
-
-            if http_method == "POST" and not user_id:
+            if http_method == "POST":
                 return create_user(event, context)
-            elif http_method == "GET" and user_id:
+            elif http_method == "GET":
                 return read_user(event, context)
-            elif http_method == "PUT" and user_id:
+            elif http_method == "PUT":
                 return update_user(event, context)
-            elif http_method == "DELETE" and user_id:
+            elif http_method == "DELETE":
                 return delete_user(event, context)
 
         # If no matching route is found
