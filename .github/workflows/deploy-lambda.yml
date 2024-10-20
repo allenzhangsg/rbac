@@ -26,6 +26,7 @@ jobs:
         cp api/*.py package/
         zip -r lambda_function.zip ./package
         ls -l
+        ls -l ./package
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -37,4 +38,3 @@ jobs:
     - name: Deploy to Lambda
       run: |
         aws lambda update-function-code --function-name RBAC --zip-file fileb://${{ github.workspace }}/lambda_function.zip
-        aws lambda update-function-configuration --function-name RBAC --handler lambda_function.lambda_handler
