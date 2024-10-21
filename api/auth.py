@@ -51,15 +51,24 @@ def verify_and_get_user(event):
         except JWTError:
             return None, "Invalid token"
 
-        # Extract username, role, and permissions from the payload
+        # Extract username and role from the payload
         username: str = payload.get('username')
         role: str = payload.get('role')
-        permissions: list = payload.get('permissions', [])
 
         if not username or not role:
             return None, "Token payload is missing required fields"
 
-        return {"username": username, "role": role, "permissions": permissions}, None
+        # Fetch user data from the database
+        user = get_user(username)
+        if not user:
+            return None, "User not found"
+
+        # Return user data including permissions from the database
+        return {
+            "username": username,
+            "role": role,
+            "permissions": user.get('permissions', [])
+        }, None
 
     except Exception as e:
         return None, str(e)
@@ -83,24 +92,18 @@ def login(event, context):
                 'body': json.dumps({'error': 'Invalid username or password'})
             }
 
-        # Handle the permissions field
-        permissions = user.get("permissions", [])
-        if permissions is None or not isinstance(permissions, list):
-            permissions = []
-
         access_token = create_access_token(
             data={
                 "sub": str(user["id"]),
                 "username": user["username"],
-                "role": user["role"],
-                "permissions": permissions
+                "role": user["role"]
             }
         )
 
         return {
             'statusCode': 200,
             'body': json.dumps({'access_token': access_token, 'token_type': 'bearer'}),
-            'headers': {  # to cross origin, use Secure; SameSite=None; 
+            'headers': {
                 'Set-Cookie': f'access_token={access_token}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age={ACCESS_TOKEN_EXPIRE_MINUTES * 60}'
             }
         }
